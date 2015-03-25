@@ -1,6 +1,6 @@
 var app = {
 	username: '<anonymous>',
-	server: 'https://api.parse.com/1/classes/chatterbox',
+	server: 'http://127.0.0.1:3000/classes/messages',
 	friendsList: {},
 	lastGetMsgTime: "",
 	defaultChatRoom: "lobby",
@@ -8,9 +8,9 @@ var app = {
 
 	init: function() {
 		//initialize function to start timers, get initial messages
+		app.$chatRoom = $('#roomname');
 		app.fetch();
 		setInterval(app.fetch, 3000);
-		app.$chatRoom = $('#roomname');
     
     //rooms
 		$('#send').on('submit', function(e){
@@ -43,7 +43,7 @@ var app = {
 		  success: function (data) {
 		    app.fetch();
 		  },
-		  error: function (data) {
+		  error: function (data, errorStat, errorThr) {
 		    // See: https://developer.mozilla.org/en-US/docs/Web/API/console.error
 		    console.error('chatterbox: Failed to send message');
 		  }
@@ -63,19 +63,19 @@ var app = {
 		// Send an AJAX get request.
 		var dataConstraints = {};
 		dataConstraints['order'] = '-createdAt';
-		if (app.lastGetMsgTime) {
-			dataConstraints['where'] = {
-				'updatedAt': {'$gt': app.lastGetMsgTime},
-				'roomname': app.$chatRoom.val() || app.defaultChatRoom
-			};
-		};
+		dataConstraints['greater than'] = true;
+		dataConstraints['updatedAt'] = app.lastGetMsgTime || 0;
+		dataConstraints['roomname'] = app.$chatRoom.val() || app.defaultChatRoom;
 		//send AJAX request to get messages from the server
 	  //on success, add to the document message area
 		$.ajax({
 		  url: app.server,
 		  type: 'GET', // GET to create a new resource
 		  data: dataConstraints,
-		  success: function (data) { 
+		  success: function (data) {
+		  	// if (typeof data === 'string') {
+		  	// 	data = JSON.parse(data);
+		  	// }
 				if (data.results.length > 0)
 					app.lastGetMsgTime = data.results[0].updatedAt;
 				for(var i=Math.min(data.results.length - 1,20); i>=0; i--) {
